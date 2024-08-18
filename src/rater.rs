@@ -109,7 +109,7 @@ async fn pull_and_update_continuous(db_write_arc: DbWrite) -> Result<()> {
         }
 
         let now = Utc::now().timestamp();
-        if now - last_ranking_update > RANKING_PERIOD {
+        if now - last_ranking_update >= RANKING_PERIOD {
             update_statistics(
                 &mut conn,
                 now,
@@ -131,7 +131,6 @@ pub async fn update_statistics(
     last_statistics_update: &mut i64,
 ) -> Result<()> {
     info!("New ranking period, updating decay and rankings");
-    let now: i64 = Utc::now().timestamp();
 
     if *last_ranking_update - *last_statistics_update >= STATISTICS_PERIOD {
         info!("New statistics period, updating statistics.");
