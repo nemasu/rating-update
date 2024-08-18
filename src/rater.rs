@@ -131,6 +131,7 @@ pub async fn update_statistics(
     last_statistics_update: &mut i64,
 ) -> Result<()> {
     info!("New ranking period, updating decay and rankings");
+    let now: i64 = Utc::now().timestamp();
 
     if *last_ranking_update - *last_statistics_update >= STATISTICS_PERIOD {
         info!("New statistics period, updating statistics.");
@@ -145,10 +146,10 @@ pub async fn update_statistics(
         }
     }
 
-    if let Err(e) = update_decay(conn, Utc::now().timestamp()) {
+    if let Err(e) = update_decay(conn, now) {
         error!("update_decay failed: {}", e);
     }
-    if let Err(e) = decay_matchups(conn, Utc::now().timestamp()) {
+    if let Err(e) = decay_matchups(conn) {
         error!("decay_matchups failed: {}", e);
     }
     if let Err(e) = update_rankings(conn) {
@@ -1438,10 +1439,10 @@ pub fn update_decay(conn: &mut Connection, timestamp: i64) -> Result<()> {
 pub async fn test_decay_matchups() {
     let mut conn = Connection::open(DB_NAME.to_owned()).unwrap();
 
-    decay_matchups(&mut conn, Utc::now().timestamp()).unwrap();
+    decay_matchups(&mut conn).unwrap();
 }
 
-fn decay_matchups(conn: &mut Connection, _timestamp: i64) -> Result<()> {
+fn decay_matchups(conn: &mut Connection) -> Result<()> {
     conn.create_scalar_function("sqrt", 1, FunctionFlags::SQLITE_DETERMINISTIC, |ctx| {
         ctx.get::<f64>(0).map(f64::sqrt)
     })?;
@@ -1827,12 +1828,10 @@ impl RatedPlayer {
         if delta < 0 {
             self.last_decay = timestamp;
             0
-        } else if delta > RATING_PERIOD {
+        } else if delta >= RATING_PERIOD {
             self.rating
                 .decay_deviation(delta / RATING_PERIOD, DECAY_CONSTANT);
 
-            //This is actually going to round some things off but I don't really mind
-            //The difference should be extremely minor in any case
             self.last_decay = timestamp;
 
             delta / RATING_PERIOD
