@@ -41,6 +41,7 @@ pub const CHAR_NAMES: &[(&str, &str)] = &[
     ("EL", "Elphelt"),
     ("AB", "A.B.A."),
     ("SL", "Slayer"),
+    ("DI", "Dizzy"),
 ];
 
 #[database("ratings")]

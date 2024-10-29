@@ -727,13 +727,14 @@ pub async fn top_char(
     game_count: Option<i64>,
     offset: Option<i64>,
 ) -> Json<Vec<RankingPlayer>> {
-    let char_id =
-        website::CHAR_NAMES.iter().position(|(c, _)| *c == char_short).unwrap() as i64;
+    if let Some(char_id) = website::CHAR_NAMES.iter().position(|(c, _)| *c == char_short) {
+        let game_count = game_count.unwrap_or(100);
+        let offset = offset.unwrap_or(0);
 
-    let game_count = game_count.unwrap_or(100);
-    let offset = offset.unwrap_or(0);
-
-    Json(top_char_inner(&conn, char_id, game_count, offset).await)
+        Json(top_char_inner(&conn, char_id as i64, game_count, offset).await)
+    } else {
+        Json(Vec::new())
+    }
 }
 
 pub async fn top_char_inner(
